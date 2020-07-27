@@ -1,144 +1,146 @@
-(function(win, $){
-	function clone(src,out){
-		for(var attr in src.prototype){
-			out.prototype[attr] = src.prototype[attr];
-		}
-	}
-	function Circle(){
-		this.item = $('<div class="circle"></div>');
-	}
-	Circle.prototype.color = function(clr){
-		this.item.css('background', clr);
-	}
-	
-	Circle.prototype.move = function(left, top){
-				this.item.css('left',left);
-				this.item.css('top',top);
-	};
+(function (win, $) {
+  //   function clone(src, out) {
+  //     for (var attr in src.prototype) {
+  //       out.prototype[attr] = src.prototype[attr];
+  //     }
+  //   }
 
-	Circle.prototype.get = function(){
-		return this.item;
-	}
+  class Circle {
+    item = $('<div class="circle"></div>');
+    color(color) {
+      this.item.css("background", color);
+    }
+    move(left, top) {
+      this.item.css("left", left);
+      this.item.css("top", top);
+    }
+    get() {
+      return this.item;
+    }
+  }
 
-	function Rect(){
-		this.item = $('<div class="rect"></div>');
-	}
-	clone(Circle, Rect);
+  class Rectangle extends Circle {
+    item = $('<div class="rect"></div>');
+  }
+  //   clone(Circle, Rectangle);
 
+  class RedCircleBuilder {
+    item;
+    constructor() {
+      this.item = new Circle();
+      this.init();
+    }
+    init() {}
+    get() {
+      return this.item;
+    }
+  }
 
-	function RedCircleBuilder(){
-		this.item = new Circle();
-		this.init();
-	}
-	RedCircleBuilder.prototype.init = function() {
-		//NOTHING
-	};
+  class BlueCircleBuilder {
+    constructor() {
+      this.item = new Circle();
+      this.init();
+    }
+    init() {
+      this.item.color("blue");
+      var rectangle = new Rectangle();
+      rectangle.color("yellow");
+      rectangle.move(40, 40);
+      this.item.get().append(rectangle.get());
+    }
+    get() {
+      return this.item;
+    }
+  }
 
-	RedCircleBuilder.prototype.get = function() {
-		return this.item;
-	};
-	
-	function BlueCircleBuilder(){
-		this.item = new Circle();
+  class ShapeFactory {
+    types = {};
 
-		this.init();
-	}
+    create(type) {
+      return new this.types[type]().get();
+    }
 
-	BlueCircleBuilder.prototype.init = function() {
-		this.item.color("blue");
+    register(type, cls) {
+      if (cls.prototype.init && cls.prototype.get) {
+        this.types[type] = cls;
+      }
+    }
+  }
 
-		var rect = new Rect();
-				rect.color("yellow");
-				rect.move(40,40);
+  var ShapeGeneratorSingleton = (function () {
+    var instance;
 
-		this.item.get().append(rect.get());
-	}; 
-	BlueCircleBuilder.prototype.get = function() {
-		return this.item;
-	};
-	
+    function init() {
+      var _aCircle = [];
+      var _stage;
+      var _sf = new ShapeFactory();
 
-	CircleFactory = function(){
-			this.types = {};
-			this.create = function(type){
-				return new this.types[type]().get();
-			};
+      function _position(circle, left, top) {
+        circle.move(left, top);
+      }
 
-			this.register = function(type, cls){
-				if(cls.prototype.init && cls.prototype.get){
-						this.types[type] = cls;
-				}
-			}
-	};
+      function registerShape(name, Shape) {
+        _sf.register(name, Shape);
+      }
 
+      function create(left, top, type) {
+        var circle = _sf.create(type);
+        circle.move(left, top);
+        return circle;
+      }
 
-	var CircleGeneratorSingleton = (function(){
-		var instance;
+      function setStage(stg) {
+        _stage = stg;
+      }
 
-		function init(){
-			var _aCircle = [],
-					_stage = $('.advert'),
-					_cf = new CircleFactory();
-					_cf.register('red', RedCircleBuilder);
-					_cf.register('blue', BlueCircleBuilder);
+      function add(circle) {
+        _stage.append(circle.get());
+        _aCircle.push(circle);
+      }
 
-			function _position(circle, left, top){
-				circle.move(left, top);
-			}
+      function index() {
+        return _aCircle.length;
+      }
 
-			function create(left, top,type){
-				var circle = _cf.create(type);
-				circle.move(left, top);
-				return circle;
-			}
+      return { index, create, add, registerShape, setStage };
+    }
 
-			function add(circle){
-				_stage.append(circle.get());
-				_aCircle.push(circle);
-			}
+    return {
+      getInstance: function () {
+        if (!instance) {
+          instance = init();
+        }
 
-			function index(){
-				return _aCircle.length;
-			}
+        return instance;
+      },
+    };
+  })();
 
-			return {index:index,
-							create:create,
-							add:add};
-		}
+  $(win.document).ready(function () {
+    var shapeGeneratorSingleton = ShapeGeneratorSingleton.getInstance();
+    shapeGeneratorSingleton.registerShape("red", RedCircleBuilder);
+    shapeGeneratorSingleton.registerShape("blue", BlueCircleBuilder);
+    shapeGeneratorSingleton.setStage($(".advert"));
 
-		return {
-			getInstance: function(){
-				if(!instance){
-					instance = init();
-				}
+    $(".advert").click(function (e) {
+      var circle = shapeGeneratorSingleton.create(
+        e.pageX - 25,
+        e.pageY - 25,
+        "red"
+      );
+      shapeGeneratorSingleton.add(circle);
+    });
 
-				return instance;
-			}
-		}
+    $(document).keypress(function (e) {
+      if (e.key == "a") {
+        var circle = shapeGeneratorSingleton.create(
+          Math.floor(Math.random() * 600),
+          Math.floor(Math.random() * 600),
+          "blue"
+        );
 
-	})();
-
-	$(win.document).ready(function(){
-		$('.advert').click(function(e){
-			var cg = CircleGeneratorSingleton.getInstance();
-			var circle = cg.create(e.pageX-25, e.pageY-25,"red");
-
-			cg.add(circle);
-				
-		});
-
-		$(document).keypress(function(e){
-			if(e.key=='a'){
-				var cg = CircleGeneratorSingleton.getInstance();
-				var circle = cg.create(Math.floor(Math.random()*600),
-															Math.floor(Math.random()*600),
-															"blue");
-				
-				cg.add(circle);
-			}
-			
-		});
-
-	});
-
+        shapeGeneratorSingleton.add(circle);
+      }
+    });
+  });
 })(window, jQuery);
