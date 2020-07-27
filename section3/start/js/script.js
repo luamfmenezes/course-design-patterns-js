@@ -55,11 +55,9 @@
 
   class ShapeFactory {
     types = {};
-
     create(type) {
       return new this.types[type]().get();
     }
-
     register(type, cls) {
       if (cls.prototype.init && cls.prototype.get) {
         this.types[type] = cls;
@@ -67,17 +65,12 @@
     }
   }
 
-  var ShapeGeneratorSingleton = (function () {
-    var instance;
-
-    function init() {
+  class ShapeGeneratorSingleton {
+    instance;
+    _init() {
       var _aCircle = [];
       var _stage;
       var _sf = new ShapeFactory();
-
-      function _position(circle, left, top) {
-        circle.move(left, top);
-      }
 
       function registerShape(name, Shape) {
         _sf.register(name, Shape);
@@ -105,19 +98,17 @@
       return { index, create, add, registerShape, setStage };
     }
 
-    return {
-      getInstance: function () {
-        if (!instance) {
-          instance = init();
-        }
-
-        return instance;
-      },
+    // public
+    getInstance = () => {
+      if (!this._instance) {
+        this._instance = this._init();
+      }
+      return this._instance;
     };
-  })();
+  }
 
   $(win.document).ready(function () {
-    var shapeGeneratorSingleton = ShapeGeneratorSingleton.getInstance();
+    var shapeGeneratorSingleton = new ShapeGeneratorSingleton().getInstance();
     shapeGeneratorSingleton.registerShape("red", RedCircleBuilder);
     shapeGeneratorSingleton.registerShape("blue", BlueCircleBuilder);
     shapeGeneratorSingleton.setStage($(".advert"));
