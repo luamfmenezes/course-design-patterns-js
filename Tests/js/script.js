@@ -24,7 +24,6 @@
     function getCircle() {
       return circle;
     }
-
     return {
       test,
       select,
