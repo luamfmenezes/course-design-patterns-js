@@ -20,6 +20,14 @@
     return this.item;
   };
 
+  Circle.prototype.getId = function () {
+    return this.id;
+  };
+
+  Circle.prototype.setId = function (id) {
+    this.id = id;
+  };
+
   function Rect() {
     this.item = $('<div class="rect"></div>');
   }
@@ -32,6 +40,9 @@
       },
       move: function (left, top) {
         shape.move(x, y);
+      },
+      getId: function () {
+        return shape.getId();
       },
     };
   }
@@ -144,6 +155,8 @@
 
       function create(left, top, type) {
         var circle = _sf.create(type);
+        circle.setId(_aCircle.length);
+        _aCircle.push(circle);
         circle.move(left, top);
         return shapeFacade(circle);
       }
@@ -157,8 +170,7 @@
       }
 
       function add(circle) {
-        _stage.add(circle.get());
-        _aCircle.push(circle);
+        _stage.add(_aCircle[circle.getId()].get());
       }
 
       function index() {
