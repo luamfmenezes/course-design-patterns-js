@@ -1,243 +1,266 @@
-(function(win, $){
-	function clone(src,out){
-		for(var attr in src.prototype){
-			out.prototype[attr] = src.prototype[attr];
-		}
-	}
-	function Circle(){
-		
-		this.item = $('<div class="circle"></div>');
-		
-	}
-	Circle.prototype.color = function(clr){
-		this.item.css('background', clr);
-	}
-	
-	Circle.prototype.move = function(left, top){
-				this.item.css('left',left);
-				this.item.css('top',top);
-	};
+(function (win, $) {
+  function clone(src, out) {
+    for (var attr in src.prototype) {
+      out.prototype[attr] = src.prototype[attr];
+    }
+  }
+  function Circle() {
+    this.item = $('<div class="circle"></div>');
+  }
+  Circle.prototype.color = function (clr) {
+    this.item.css("background", clr);
+  };
 
-	Circle.prototype.get = function(){
-		return this.item;
-	};
+  Circle.prototype.move = function (left, top) {
+    this.item.css("left", left);
+    this.item.css("top", top);
+  };
 
-	Circle.prototype.getID = function(){
-		return this.id;
-	};
+  Circle.prototype.get = function () {
+    return this.item;
+  };
 
-	Circle.prototype.setID = function(id){
-		this.id= id;
-	};
+  Circle.prototype.getID = function () {
+    return this.id;
+  };
 
-	function Rect(){
-		this.item = $('<div class="rect"></div>');
-	}
-	clone(Circle, Rect);
+  Circle.prototype.setID = function (id) {
+    this.id = id;
+  };
 
-	function binder(scope, fun){
-		return function(){
-			return fun.apply(scope,arguments);
-		};
-	}
+  Circle.prototype.next = function (shape) {
+    if (shape) {
+      this.nextShape = shape;
+    }
+    return this.nextShape;
+  };
 
-	function shapeFacade(shp){
-		return {
-			color:binder(shp,shp.color),
-			move:binder(shp,shp.move),
-			getID:binder(shp,shp.getID)
+  Circle.prototype.chainDo = function (action, args, count) {
+    this[action].apply(this, args);
+    if (count && this.nextShape) {
+      this.nextShape.chainDo(action, args, --count);
+    }
+  };
 
-		};
-	}
+  function Rect() {
+    this.item = $('<div class="rect"></div>');
+  }
+  clone(Circle, Rect);
 
-	function selfDestructDecorator(obj){
-		obj.item.click(function(){
-			obj.kill();
-		});
-		obj.kill = function(){
-			obj.item.remove();
-		};
-	}
+  function binder(scope, fun) {
+    return function () {
+      return fun.apply(scope, arguments);
+    };
+  }
 
+  function shapeFacade(shp) {
+    return {
+      color: binder(shp, shp.color),
+      move: binder(shp, shp.move),
+      getID: binder(shp, shp.getID),
+    };
+  }
 
-	function RedCircleBuilder(){
-		this.item = new Circle();
-		this.init();
-	}
-	RedCircleBuilder.prototype.init = function() {
-		//NOTHING
-	};
+  function selfDestructDecorator(obj) {
+    obj.item.click(function () {
+      obj.kill();
+    });
+    obj.kill = function () {
+      obj.item.remove();
+    };
+  }
 
-	RedCircleBuilder.prototype.get = function() {
-		return this.item;
-	};
+  function RedCircleBuilder() {
+    this.item = new Circle();
+    this.init();
+  }
+  RedCircleBuilder.prototype.init = function () {
+    //NOTHING
+  };
 
-	
-	function BlueCircleBuilder(){
-		this.item = new Circle();
+  RedCircleBuilder.prototype.get = function () {
+    return this.item;
+  };
 
-		this.init();
-	}
+  function BlueCircleBuilder() {
+    this.item = new Circle();
 
-	BlueCircleBuilder.prototype.init = function() {
-		this.item.color("blue");
+    this.init();
+  }
 
-		var rect = new Rect();
-				rect.color("yellow");
-				rect.move(40,40);
-				selfDestructDecorator(rect);
-		this.item.get().append(rect.get());
-	}; 
-	BlueCircleBuilder.prototype.get = function() {
-		return this.item;
-	};	
+  BlueCircleBuilder.prototype.init = function () {
+    this.item.color("blue");
 
-	ShapeFactory = function(){
-			this.types = {};
-			this.create = function(type){
-				return new this.types[type]().get();
-			};
+    var rect = new Rect();
+    rect.color("yellow");
+    rect.move(40, 40);
+    selfDestructDecorator(rect);
+    this.item.get().append(rect.get());
+  };
+  BlueCircleBuilder.prototype.get = function () {
+    return this.item;
+  };
 
-			this.register = function(type, cls){
-				if(cls.prototype.init && cls.prototype.get){
-						this.types[type] = cls;
-				}
-			}
-	};
+  ShapeFactory = function () {
+    this.types = {};
+    this.create = function (type) {
+      return new this.types[type]().get();
+    };
 
-	function Stage(id){
-		this.index = 0;
-		this.context = $(id);
-		this.SIG = 'stageItem_';
-	}
+    this.register = function (type, cls) {
+      if (cls.prototype.init && cls.prototype.get) {
+        this.types[type] = cls;
+      }
+    };
+  };
 
-	Stage.prototype.add = function (item){
-		++this.index;
-		item.addClass(this.SIG + this.index);
-		this.context.append(item);
-	};
+  function Stage(id) {
+    this.index = 0;
+    this.context = $(id);
+    this.SIG = "stageItem_";
+  }
 
-	Stage.prototype.remove = function(index){
-		this.context.remove('.' + this.SIG + index);
-	}
+  Stage.prototype.add = function (item) {
+    ++this.index;
+    item.addClass(this.SIG + this.index);
+    this.context.append(item);
+  };
 
-	function CompositeController(a){
-		this.a = a;
-	}
+  Stage.prototype.remove = function (index) {
+    this.context.remove("." + this.SIG + index);
+  };
 
-	CompositeController.prototype.action = function (act){
-		var args = Array.prototype.slice.call(arguments);
-				args.shift();
-		for(var item in this.a){
-			this.a[item][act].apply(this.a[item],args);
-		}
-	};
+  function CompositeController(a) {
+    this.a = a;
+  }
 
-	function flyWeightFader(item){
-		console.log(item[0], item.hasClass('circle'))
-		if(item.hasClass('circle')){
-			item.fadeTo(.5,item.css('opacity')*.5);
-		}
-	}
+  CompositeController.prototype.action = function (act) {
+    var args = Array.prototype.slice.call(arguments);
+    args.shift();
+    for (var item in this.a) {
+      this.a[item][act].apply(this.a[item], args);
+    }
+  };
 
+  function flyWeightFader(item) {
+    console.log(item[0], item.hasClass("circle"));
+    if (item.hasClass("circle")) {
+      item.fadeTo(0.5, item.css("opacity") * 0.5);
+    }
+  }
 
-	var CircleGeneratorSingleton = (function(){
-		var instance;
+  var CircleGeneratorSingleton = (function () {
+    var instance;
 
-		function init(){
-			var _aCircle = [],
-					_stage,
-					_sf = new ShapeFactory(),
-					_cc = new CompositeController(_aCircle);
+    function init() {
+      var _aCircle = [],
+        _stage,
+        _sf = new ShapeFactory(),
+        _cc = new CompositeController(_aCircle);
 
-			function _position(circle, left, top){
-				circle.move(left, top);
-			}
-			function registerShape(name,cls){
-				_sf.register(name, cls);
-			}
-			function setStage(stg){
-				_stage = stg;
-			}
+      function _position(circle, left, top) {
+        circle.move(left, top);
+      }
+      function registerShape(name, cls) {
+        _sf.register(name, cls);
+      }
+      function setStage(stg) {
+        _stage = stg;
+      }
 
-			function create(left, top,type){
-				var circle = _sf.create(type);
-				circle.move(left, top);
-				circle.setID(_aCircle.length);
-				_aCircle.push(circle);
+      function create(left, top, type) {
+        var circle = _sf.create(type);
+        var index = _aCircle.length - 1;
+        circle.move(left, top);
+        circle.setID(_aCircle.length);
+        _aCircle.push(circle);
 
-				return shapeFacade(circle);
-			}
+        if (index != -1) {
+          _aCircle[index].next(circle);
+        }
 
-			function tint(clr){
-				_cc.action('color',clr);
-			}
+        return shapeFacade(circle);
+      }
 
-			function move(left, top){
-				_cc.action('move',left, top);
-			}
+      function chainTint(count) {
+        var index = Math.max(0, _aCircle.length - count);
+        var color =
+          "#" +
+          Math.floor(Math.random() * 255).toString(16) +
+          Math.floor(Math.random() * 255).toString(16) +
+          Math.floor(Math.random() * 255).toString(16);
+        _aCircle[index].chainDo("color", [color], count);
+      }
 
-			function add(circle){
-				_stage.add(_aCircle[circle.getID()].get());
-				
-			}
+      function tint(clr) {
+        _cc.action("color", clr);
+      }
 
-			function index(){
-				return _aCircle.length;
-			}
+      function move(left, top) {
+        _cc.action("move", left, top);
+      }
 
-			return {index:index,
-							create:create,
-							add:add,
-							register:registerShape,
-							setStage:setStage,
-							tint:tint,
-							move:move};
-		}
+      function add(circle) {
+        _stage.add(_aCircle[circle.getID()].get());
+      }
 
-		return {
-			getInstance: function(){
-				if(!instance){
-					instance = init();
-				}
+      function index() {
+        return _aCircle.length;
+      }
 
-				return instance;
-			}
-		}
+      return {
+        index: index,
+        create: create,
+        add: add,
+        register: registerShape,
+        setStage: setStage,
+        tint: tint,
+        move: move,
+        chainTint,
+      };
+    }
 
-	})();
+    return {
+      getInstance: function () {
+        if (!instance) {
+          instance = init();
+        }
 
-	$(win.document).ready(function(){
-		var cg = CircleGeneratorSingleton.getInstance();
-		cg.register('red', RedCircleBuilder);
-		cg.register('blue', BlueCircleBuilder);
-		cg.setStage(new Stage('.advert'));
-		$('.advert').click(function(e){
-			var circle = cg.create(e.pageX-25, e.pageY-25,"red");
+        return instance;
+      },
+    };
+  })();
 
-			cg.add(circle);
+  $(win.document).ready(function () {
+    var cg = CircleGeneratorSingleton.getInstance();
+    cg.register("red", RedCircleBuilder);
+    cg.register("blue", BlueCircleBuilder);
+    cg.setStage(new Stage(".advert"));
+    $(".advert").click(function (e) {
+      var circle = cg.create(e.pageX - 25, e.pageY - 25, "red");
 
-			flyWeightFader($(e.target));
-		});
+      cg.add(circle);
+      cg.chainTint(5);
 
+      flyWeightFader($(e.target));
+    });
 
-		$(document).keypress(function(e){
-			if(e.key==='a'){
-				var circle = cg.create(Math.floor(Math.random()*600),
-															Math.floor(Math.random()*600),
-															"blue");
-				
-				cg.add(circle);
-			}else if(e.key==='t'){
-				cg.tint('black');
-			}else if(e.key==='ArrowRight'){
-				cg.move("+=5px","+=0px");
-			}else if(e.key==='ArrowLeft'){
-				cg.move("-=5px","+=0px");
-			}
-			
-		});
+    $(document).keypress(function (e) {
+      if (e.key === "a") {
+        var circle = cg.create(
+          Math.floor(Math.random() * 600),
+          Math.floor(Math.random() * 600),
+          "blue"
+        );
 
-	});
-
+        cg.add(circle);
+      } else if (e.key === "t") {
+        cg.tint("black");
+      } else if (e.key === "ArrowRight") {
+        cg.move("+=5px", "+=0px");
+      } else if (e.key === "ArrowLeft") {
+        cg.move("-=5px", "+=0px");
+      }
+    });
+  });
 })(window, jQuery);

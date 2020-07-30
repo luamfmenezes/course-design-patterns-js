@@ -20,10 +20,32 @@
     return this.item;
   };
 
+  Circle.prototype.getId = function () {
+    return this.id;
+  };
+
+  Circle.prototype.setId = function (id) {
+    this.id = id;
+  };
+
   function Rect() {
     this.item = $('<div class="rect"></div>');
   }
   clone(Circle, Rect);
+
+  function binderProxy(scope, fn) {
+    return function () {
+      return fn.apply(scope, arguments);
+    };
+  }
+
+  function shapeFacade(shape) {
+    return {
+      color: binderProxy(shape, shape.color),
+      move: binderProxy(shape, shape.move),
+      getId: binderProxy(shape, shape.getId),
+    };
+  }
 
   function selfDestructDecorator(obj) {
     obj.item.click(function () {
@@ -133,8 +155,10 @@
 
       function create(left, top, type) {
         var circle = _sf.create(type);
+        circle.setId(_aCircle.length);
+        _aCircle.push(circle);
         circle.move(left, top);
-        return circle;
+        return shapeFacade(circle);
       }
 
       function tint(clr) {
@@ -146,8 +170,7 @@
       }
 
       function add(circle) {
-        _stage.add(circle.get());
-        _aCircle.push(circle);
+        _stage.add(_aCircle[circle.getId()].get());
       }
 
       function index() {
